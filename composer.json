@@ -1,0 +1,19 @@
+{
+    "name": "martenasoft/console_profile_bundle",
+    "description": "MartenaSoft ConsoleProfileBundle",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "MartenaSoft\\ConsoleProfileBundle\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "MartenaSoft",
+            "email": "martena.soft@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
