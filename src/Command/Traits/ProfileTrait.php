@@ -82,43 +82,6 @@ trait ProfileTrait
         return $item;
     }
 
-    private function writeProfileDb(string $token,  OutputInterface $output): void
-    {
-        $profile = $this->reader->load($token);
-        if (!$profile && !$profile->hasCollector('db')) {
-            return;
-        }
-
-        $db = $profile->getCollector('db');
-
-        $table = new Table($output);
-        $table->setHeaders(['Database:', ' --- ' ]);
-        $table->addRow(['Query count: ', $db->getQueryCount()]);
-        $table->addRow(['Time: ', $db->getTime()]);
-        $table->render();
-
-        $table = new Table($output);
-        $table->setColumnMaxWidth(1, 200);
-        $table->setHeaders(['Times', 'SQL']);
-        foreach ($db->getQueries() as $queries) {
-            foreach ($queries as $query) {
-                if (!isset($query['sql'])) {
-                    continue;
-                }
-
-                $table->addRow(new TableSeparator());
-                $sql = $this->interpolateQuery(
-                    $query['sql'],
-                    $query['params']->getValue() ?? [],
-                    $query['types'] ?? []
-                );
-                $time = sprintf('%.6f ms', $query['executionMS']);
-                $table->addRow([$time, $sql]);
-            }
-        }
-        $table->render();
-    }
-
     private function interpolateQuery(string $sql, array $params, array $types = []): string
     {
         $index = 0;
