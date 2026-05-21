@@ -61,7 +61,7 @@ final class ProfileDumpCommand extends Command
             } elseif ($isRequestDetail) {
                 $menu = "[r] Request list [s] Sql [e] Events [q] quit";
             } elseif ($isSql) {
-                $menu = "[r] Request list [s] Sql [e] Events [q] quit";
+                $menu = "[r] Request list [s] Sql [so] Sql Options... [q] quit";
             }
 
             $io->writeln($menu);
@@ -110,7 +110,7 @@ final class ProfileDumpCommand extends Command
                 $isRequestDetail = true;
             }
 
-            if ($i >= 100) {
+            if ($i >= 10000) {
                 break;
             }
             $i++;

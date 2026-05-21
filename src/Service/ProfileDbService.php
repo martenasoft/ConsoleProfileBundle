@@ -6,10 +6,16 @@ use Doctrine\DBAL\Types\Types;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\HttpKernel\Profiler\Profile;
 
 class ProfileDbService
 {
+
+    public function __construct(private string $logDir)
+    {
+    }
+
     public function renderProfileDb(Profile $profile,  OutputInterface $output): void
     {
         if (!$profile->hasCollector('db')) {
@@ -17,16 +23,12 @@ class ProfileDbService
         }
 
         $db = $profile->getCollector('db');
-
         $table = new Table($output);
-        $table->setHeaders(['Database:', ' --- ' ]);
-        $table->addRow(['Query count: ', $db->getQueryCount()]);
-        $table->addRow(['Time: ', $db->getTime()]);
-        $table->render();
-
-        $table = new Table($output);
-        $table->setColumnMaxWidth(1, 200);
-        $table->setHeaders(['Times', 'SQL']);
+        $table->setColumnMaxWidth(0, 200);
+        $table->setHeaders(['Sql', 'Times']);
+        $index = 1;
+        $totals = [];
+        $queriesData = [];
         foreach ($db->getQueries() as $queries) {
             foreach ($queries as $query) {
                 if (!isset($query['sql'])) {
@@ -40,11 +42,51 @@ class ProfileDbService
                     $query['types'] ?? []
                 );
                 $time = sprintf('%.6f ms', $query['executionMS']);
-                $table->addRow([$time, $sql]);
-            }
+                
+                if (preg_match('/^\s*([^\s,()]+)/u', $sql, $matches) && isset($matches[1])) {
+                    if (!isset($totals[$matches[1]])) {
+                        $totals[$matches[1]] = (float)$query['executionMS'];
+                    } else {
+                        $totals[$matches[1]] += (float)$query['executionMS'];
+                    }
+                }
+                $queriesData[] = [
+                    'sql' => $sql,
+                    'time' => (float)$query['executionMS'],
+                ];
+                $table->addRow([$sql, $time]);
+                $index++;
+            }            
         }
+        
         $table->render();
+
+        $filePath = $this->logDir . '/ms_profiler_queries.csv';
+        $file = fopen($filePath, 'w');
+        fputcsv($file, ['Sql', 'Times'], ';');
+
+        $table = new Table($output);
+        $table->setHeaders(['Database:', ' --- ' ]);
+
+        foreach ($totals as $com => $total) {
+            $table->addRow([$com, sprintf('%.6f ms',  sprintf('%.6f ms', $total))]);
+        }
+        
+        $table->addRow(['Total queries count: ', $db->getQueryCount()]);
+        $table->addRow(['Total time: ', $db->getTime()]);
+        $table->render();
+
+        
+        foreach ($queriesData as $item) {
+            $row = [
+                $item['sql'],
+                $item['time'],
+            ];
+            fputcsv($file, $row, ';');
+        }
+        fclose($file);
     }
+
 
     private function interpolateQuery(string $sql, array $params, array $types = []): string
     {
@@ -60,12 +102,15 @@ class ProfileDbService
 
             $index++;
 
-            return $this->formatSqlValue($value, $type);
+            $value = $this->formatSqlValue($value, $type);
+            
+            return $value;
         }, $sql);
     }
 
     private function formatSqlValue(mixed $value, ?int $type): string
     {
+        $valueToLower = strtolower($value);
         if ($value === null) {
             return 'NULL';
         }
@@ -76,7 +121,7 @@ class ProfileDbService
         }
 
         // Boolean
-        if (is_bool($value)) {
+        if (is_bool($value) || $valueToLower=== 'false' || $valueToLower === 'false') {
             return $value ? 'TRUE' : 'FALSE';
         }
 
