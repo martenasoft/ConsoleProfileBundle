@@ -3,6 +3,7 @@
 namespace MartenaSoft\ConsoleProfileBundle\Command;
 
 use MartenaSoft\ConsoleProfileBundle\Service\ProfileDbService;
+use MartenaSoft\ConsoleProfileBundle\Service\ProfileDumpService;
 use MartenaSoft\ConsoleProfileBundle\Service\ProfileEventsService;
 use MartenaSoft\ConsoleProfileBundle\Service\ProfileRequestService;
 use MartenaSoft\ConsoleProfileBundle\Service\ProfilerReader;
@@ -12,15 +13,18 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\HttpKernel\DataCollector\DumpDataCollector;
 use Symfony\Component\HttpKernel\Profiler\Profile;
+use Symfony\Component\VarDumper\Dumper\CliDumper;
 
 final class ProfileDumpCommand extends Command
 {
     public function __construct(
-        private readonly ProfilerReader        $reader,
+        private readonly ProfilerReader $reader,
         private readonly ProfileRequestService $profileRequestService,
-        private readonly ProfileDbService      $profileDbService,
+        private readonly ProfileDbService $profileDbService,
         private readonly ProfileEventsService $profileEventsService,
+        private readonly ProfileDumpService $profileDumpService,
     )
     {
         parent::__construct();
@@ -52,16 +56,16 @@ final class ProfileDumpCommand extends Command
 
         while (true) {
 
-            $menu = ($cursorBefore ? '[h] home ' : '') . "[n] next [1..$limit] select token [q] quit";
+            $menu = ($cursorBefore? '[h] home ' : '') . "[n] next [1..$limit] select token [q] quit";
 
             if (!$isRequestDetail && !$isSql) {
                 $selectedToken = '';
                 $items = $this->reader->find(limit: $limit, end: $cursorBefore);
                 $tokens = $this->profileRequestService->renderItems($output, $items);
             } elseif ($isRequestDetail) {
-                $menu = "[r] Request list [s] Sql [e] Events [q] quit";
+                $menu = "[r] Request list [s] Sql [si] Sql + import sql to file CSV [e] Events [d] Dumps [q] quit";
             } elseif ($isSql) {
-                $menu = "[r] Request list [s] Sql [so] Sql Options... [q] quit";
+                $menu = "[r] Request list [s] Sql [si] Sql + import sql to file CSV [e] Events [d] Dumps [q] quit";
             }
 
             $io->writeln($menu);
@@ -80,7 +84,7 @@ final class ProfileDumpCommand extends Command
                 $isSql = false;
             }
 
-            if ($key === 's' && !empty($selectedToken)) {
+            if (($key === 's' || $key === 'si') && !empty($selectedToken)) {
                 $isSql = true;
                 $profile = $this->reader->load($selectedToken);
 
@@ -89,23 +93,29 @@ final class ProfileDumpCommand extends Command
                     return Command::FAILURE;
                 }
 
-                $this->profileDbService->renderProfileDb($profile, $output);
+                $this->profileDbService->renderProfileDb($profile, $output, ($key === 'si'));
+            }
+            
+            if ($key === 'd') {
+                $profile = $this->reader->load($selectedToken);
+                $this->profileDumpService->renderDumps($profile, $output);
+            }
+
+            if ($key === 'e') {
+                $profile = $this->reader->load($selectedToken);
+                $this->profileEventsService->renderEvents($profile, $output);
             }
 
             if (isset($tokens[$key])) {
                 $selectedToken = $tokens[$key];
                 $profile = $this->reader->load($tokens[$key]);
 
-//                $this->profileEventsService->renderEvents($profile, $output);
-////                foreach ($profile->getCollectors() as $name => $collector) {
-////                    $output->writeln($name . ' => ' . get_class($collector));
-////                }
-//                dd(12);
-
                 if (!$profile) {
                     $output->writeln('<error>Profile not found</error>');
                     return Command::FAILURE;
                 }
+
+
                 $this->profileRequestService->profileDetail($profile, $output);
                 $isRequestDetail = true;
             }
@@ -115,33 +125,6 @@ final class ProfileDumpCommand extends Command
             }
             $i++;
         }
-
-
-//        $menu = $this->profileRequestService->itemsMenu($input, $output, $helper);
-//
-//        switch ($menu) {
-//            case ProfileRequestService::ACTION_NEXT:
-//                $io = new SymfonyStyle($input, $output);
-//                $io->clear();
-//                $cursorNext = end($items)['time'];
-//                $items = $this->profileRequestService->printItems($output, limit: $limit, end: $cursorNext);
-//                $menu = $this->profileRequestService->itemsMenu($input, $output, $helper);
-//                break;
-//            case ProfileRequestService::ACTION_PREV;
-//        }
-
-
-        // $this->mainMenu($input, $output);
-
-//        $this->printProfile($output, $this->reader, $token);
-//        $profile = $this->reader->load($token);
-//        foreach ($profile->getCollectors() as $name => $collector) {
-//            $output->writeln($name.' => '.get_class($collector));
-//        }
-//
-//        if (!empty($token)) {
-//           // $this->writeProfileDb($token, $output);
-//        }
         return 0;
     }
 }

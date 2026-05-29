@@ -16,7 +16,7 @@ class ProfileDbService
     {
     }
 
-    public function renderProfileDb(Profile $profile,  OutputInterface $output): void
+    public function renderProfileDb(Profile $profile,  OutputInterface $output, bool $isImportToCsv = false): void
     {
         if (!$profile->hasCollector('db')) {
             return;
@@ -61,9 +61,12 @@ class ProfileDbService
         
         $table->render();
 
-        $filePath = $this->logDir . '/ms_profiler_queries.csv';
-        $file = fopen($filePath, 'w');
-        fputcsv($file, ['Sql', 'Times'], ';');
+        if ($isImportToCsv) {
+            $filePath = $this->logDir . '/' . $profile->getToken() . '_ms_profiler_queries.csv';
+            $file = fopen($filePath, 'w');
+            fputcsv($file, ['Sql', 'Times'], ';');
+
+        }
 
         $table = new Table($output);
         $table->setHeaders(['Database:', ' --- ' ]);
@@ -76,15 +79,16 @@ class ProfileDbService
         $table->addRow(['Total time: ', $db->getTime()]);
         $table->render();
 
-        
-        foreach ($queriesData as $item) {
-            $row = [
-                $item['sql'],
-                $item['time'],
-            ];
-            fputcsv($file, $row, ';');
+        if ($isImportToCsv) {
+            foreach ($queriesData as $item) {
+                $row = [
+                    $item['sql'],
+                    $item['time'],
+                ];
+                fputcsv($file, $row, ';');
+            }
+            fclose($file);
         }
-        fclose($file);
     }
 
 
