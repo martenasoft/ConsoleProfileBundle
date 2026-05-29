@@ -24,15 +24,18 @@ class ProfileEventsService
             $data = $data->getValue(true);
         }
 
-        if (!is_array($data) || [] === $data) {
-            $output->writeln('<comment>No events data available</comment>');
+        if (!is_array($data) || empty($data)) {
+            $output->writeln(sprintf(
+                "\n<fg=green;options=bold>[Events #%d]</> <fg=yellow>%s</>",
+                0,
+                "No events found"));
             return;
         }
-
+        
         foreach ($data as $dispatcherName => $dispatcherData) {
 
             foreach ($dispatcherData as $type => $listenerItem) {
-                $output->writeln('<comment>'.$type.'</comment>');
+                $output->writeln('<comment>' . $type . '</comment>');
                 $table = new Table($output);
                 $table->setHeaders(['Event', 'Priority', 'Stub']);
                 foreach ($listenerItem as $eventData) {

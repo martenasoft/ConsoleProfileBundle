@@ -9,7 +9,7 @@ use Symfony\Component\VarDumper\Dumper\CliDumper;
 
 class ProfileDumpService
 {
-    public function renderDumps(Profile $profile, OutputInterface $output)
+    public function renderDumps(Profile $profile, OutputInterface $output): void
     {
         /** @var DumpDataCollector $dumpData */
         $dumpData = $profile->getCollector('dump');
@@ -19,12 +19,21 @@ class ProfileDumpService
         $property->setAccessible(true);
         $rawDumps = $property->getValue($dumpData);
 
+        if (empty($rawDumps)) {
+            $output->writeln(sprintf(
+                "\n<fg=green;options=bold>[Dump #%d]</> <fg=yellow>%s</>",
+                0,
+                "No dumps found"));
+            
+            return;
+        }
+
         $dumper = new CliDumper();
 
         $stream = fopen('php://memory', 'r+');
         $dumper = new CliDumper($stream);
         $dumper->setColors($output->isDecorated());
-
+        
         foreach ($rawDumps as $index => $dump) {
             ftruncate($stream, 0);
             rewind($stream);

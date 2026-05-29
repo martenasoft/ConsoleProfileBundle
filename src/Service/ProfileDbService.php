@@ -23,13 +23,23 @@ class ProfileDbService
         }
 
         $db = $profile->getCollector('db');
+        $queries = $db->getQueries();
+
+        if (empty($queries)) {
+            $output->writeln(sprintf(
+                "\n<fg=green;options=bold>[Sql #%d]</> <fg=yellow>%s</>",
+                0,
+                "No sqls found"));
+        }
+        
         $table = new Table($output);
         $table->setColumnMaxWidth(0, 200);
         $table->setHeaders(['Sql', 'Times']);
         $index = 1;
         $totals = [];
         $queriesData = [];
-        foreach ($db->getQueries() as $queries) {
+        
+        foreach ($queries as $queries) {
             foreach ($queries as $query) {
                 if (!isset($query['sql'])) {
                     continue;

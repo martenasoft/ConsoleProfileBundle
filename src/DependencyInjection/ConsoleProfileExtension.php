@@ -16,20 +16,16 @@ class ConsoleProfileExtension extends Extension implements PrependExtensionInter
             return;
         }
 
-        // По умолчанию считаем, что бандл включен
         $bundleEnabled = true;
 
-        // Извлекаем сырые конфигурации нашего бандла console_profile
         $configs = $container->getExtensionConfig('console_profile');
 
-        // Перебираем конфигурации (их может быть несколько из разных файлов)
         foreach ($configs as $config) {
             if (isset($config['enabled'])) {
                 $bundleEnabled = (bool) $config['enabled'];
             }
         }
 
-        // Если пользователь отключил бандл, выключаем профайлер или просто выходим
         if (!$bundleEnabled) {
             $container->prependExtensionConfig('framework', [
                 'profiler' => [
@@ -40,7 +36,6 @@ class ConsoleProfileExtension extends Extension implements PrependExtensionInter
             return;
         }
 
-        // Если бандл включен, принудительно активируем профайлер
         $container->prependExtensionConfig('framework', [
             'profiler' => [
                 'enabled' => true,
@@ -57,12 +52,9 @@ class ConsoleProfileExtension extends Extension implements PrependExtensionInter
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
         $container->setParameter('console_profile', $config);
-
-        // Необязательно, но полезно: если бандл выключен конфигом,
-        // вы можете здесь удалить ваши внутренние сервисы (listeners/commands),
-        // чтобы они не тратили ресурсы в продакшене.
+        
         if (!$config['enabled']) {
-            // Например: $container->removeDefinition('my_bundle.listener');
+            // $container->removeDefinition('my_bundle.listener');
         }
     }
 }
