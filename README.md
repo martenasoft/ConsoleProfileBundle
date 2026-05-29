@@ -18,7 +18,7 @@ return [
 
 ### optional config/packages/console_profile.yaml
 
-Recommended safe configuration for `ms:profiler:dump`:
+Recommended safe configuration for `ms:profiler`:
 
 ```yaml
 console_profile:
@@ -40,5 +40,5 @@ php bin/phpunit SomeRequestTest.php --filter=yourTestFunction
 ### then run profile
 
 ```php
- php bin/console ms:profiler:dump --env=test
+ php bin/console ms:profiler --env=test
 ```
