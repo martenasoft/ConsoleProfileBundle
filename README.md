@@ -15,6 +15,22 @@ return [
     MartenaSoft\ConsoleProfileBundle\ConsoleProfileBundle::class => ['test' => true],
 ];
 ```
+
+### optional config/packages/console_profile.yaml
+
+Recommended safe configuration for `ms:profiler:dump`:
+
+```yaml
+console_profile:
+  enabled: true
+  collectors:
+    - request
+    - dump
+    - db
+    - events
+```
+
+
 ### then run some test
 
 ```php

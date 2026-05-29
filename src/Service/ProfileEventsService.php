@@ -2,9 +2,11 @@
 
 namespace MartenaSoft\ConsoleProfileBundle\Service;
 
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\DataCollector\EventDataCollector;
 use Symfony\Component\HttpKernel\Profiler\Profile;
+use Symfony\Component\VarDumper\Cloner\Data;
 
 class ProfileEventsService
 {
@@ -16,10 +18,33 @@ class ProfileEventsService
 
         /** @var EventDataCollector $items */
         $items = $profile->getCollector('events');
-dd($items->getNotCalledListeners());
-        foreach ($items as $item) {
-            dd($item);
+
+        $data = $items->getData();
+        if ($data instanceof Data) {
+            $data = $data->getValue(true);
         }
-        dd(33);
+
+        if (!is_array($data) || [] === $data) {
+            $output->writeln('<comment>No events data available</comment>');
+            return;
+        }
+
+        foreach ($data as $dispatcherName => $dispatcherData) {
+
+            foreach ($dispatcherData as $type => $listenerItem) {
+                $output->writeln('<comment>'.$type.'</comment>');
+                $table = new Table($output);
+                $table->setHeaders(['Event', 'Priority', 'Stub']);
+                foreach ($listenerItem as $eventData) {
+                    $table->addRow([
+                        $eventData['event'],
+                        $eventData['priority'],
+                        $eventData['stub'],
+
+                    ]);
+                }
+                $table->render();
+            }
+        }
     }
 }
