@@ -31,7 +31,6 @@ final class MsProfilerCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $cursorBefore = null;
-        $isRequestDetail = false;
         $limit = 20;
         $removeFields = ['virtual_type', 'parent'];
 
@@ -41,12 +40,13 @@ final class MsProfilerCommand extends Command
         $i = 1;
         foreach ($items as $item) {
             $profile_ = $this->reader->load($item['token']);
-            array_unshift($item, $i);
-            $item = array_merge($item, $this->writeProfileItem($profile_));
-
             if (!$profile_) {
                 continue;
             }
+
+            array_unshift($item, $i);
+            $item = array_merge($item, $this->writeProfileItem($profile_));
+
             $tokens[$item['token']] = $item['url'] . '( date: '.$item['date'].' )';
             
 
